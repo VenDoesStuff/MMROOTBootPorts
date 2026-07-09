@@ -105,6 +105,11 @@ void onfunc_808395F0(Player* this, PlayState* play) {
     hoverBootsTimer = 0;
 }
 
+RECOMP_HOOK("func_80834D50")
+void onfunc_80834D50() {
+    hoverBootsTimer = 0;
+}
+
 RECOMP_HOOK ("func_8083EA44") void HoverSFXHook(Player* this, f32 arg1) {
     if ((useHoverBoots == true) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         (hoverBootsTimer != 0)) {
