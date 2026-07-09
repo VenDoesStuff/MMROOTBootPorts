@@ -314,3 +314,61 @@ RECOMP_PATCH void func_8083827C(Player* this, PlayState* play) {
         this->remainingHopsCounter = 5;
     }
 }
+
+#define PLAYER_STATE1_23 PLAYER_STATE1_800000 // (1 << 23)
+
+extern Gfx gHoverBootsCircleDL[];
+extern Vec3s gZeroVec3s;
+
+// only drawing the circle under the boots for now, actual boots later
+RECOMP_HOOK("Player_PostLimbDrawGameplay")
+void Draw_HoverBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
+    Player* this = GET_PLAYER(play);
+    
+    OPEN_DISPS(play->state.gfxCtx);
+    
+    // temp index?
+    // original circle draw was in `Player_DrawGameplay`, but that made him super huge
+    if (limbIndex == PLAYER_LIMB_TORSO) {
+        // if ((this->currentBoots == PLAYER_BOOTS_HOVER) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+        //     !(this->stateFlags1 & PLAYER_STATE1_23) && ((u32)this->hoverBootsTimer != 0)) {
+        if ((useHoverBoots) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+            !(this->stateFlags1 & PLAYER_STATE1_23) && ((u32)hoverBootsTimer != 0)) {
+            static s32 D_8085486C = 255;
+
+            if (hoverBootsTimer < 19) {
+                if (hoverBootsTimer >= 15) {
+                    D_8085486C = (19 - hoverBootsTimer) * 51.0f;
+                } else if (hoverBootsTimer < 19) {
+                    s32 sp5C = hoverBootsTimer;
+
+                    if (sp5C > 9) {
+                        sp5C = 9;
+                    }
+
+                    D_8085486C = (-sp5C * 4) + 36;
+                    D_8085486C = SQ(D_8085486C);
+                    D_8085486C = (s32)((Math_CosS(D_8085486C) * 100.0f) + 100.0f) + 55.0f;
+                    D_8085486C *= sp5C * (1.0f / 9.0f);
+                }
+
+                // Matrix_SetTranslateRotateYXZ(this->actor.world.pos.x, this->actor.world.pos.y + 2.0f,
+                //                             this->actor.world.pos.z, &D_80854864);
+                Matrix_SetTranslateRotateYXZ(this->actor.world.pos.x, this->actor.world.pos.y + 2.0f,
+                                            this->actor.world.pos.z, &gZeroVec3s);
+                Matrix_Scale(4.0f, 4.0f, 4.0f, MTXMODE_APPLY);
+
+                // MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx, "../z_player.c", 19317);
+                MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+                gSPSegment(POLY_XLU_DISP++, 0x08,
+                        Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, 0, 0, 16, 32, 1, 0,
+                                            (play->gameplayFrames * -15) % 128, 16, 32));
+                gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 255, D_8085486C);
+                gDPSetEnvColor(POLY_XLU_DISP++, 120, 90, 30, 128);
+                gSPDisplayList(POLY_XLU_DISP++, gHoverBootsCircleDL);
+            }
+        }
+    }
+    
+    CLOSE_DISPS(play->state.gfxCtx);
+}
