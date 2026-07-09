@@ -322,12 +322,15 @@ RECOMP_PATCH void func_8083827C(Player* this, PlayState* play) {
 
 #define PLAYER_STATE1_23 PLAYER_STATE1_800000 // (1 << 23)
 
-extern Gfx gHoverBootsCircleDL[];
 extern Vec3s gZeroVec3s;
+extern Gfx gHoverBootsCircleDL[];
+extern Gfx gLinkAdultLeftHoverBootDL[];
+extern Gfx gLinkAdultRightHoverBootDL[];
+extern Gfx gLinkAdultLeftIronBootDL[];
+extern Gfx gLinkAdultRightIronBootDL[];
 
-// only drawing the circle under the boots for now, actual boots later
 RECOMP_HOOK("Player_PostLimbDrawGameplay")
-void Draw_HoverBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
+void Draw_OoTBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
     Player* this = GET_PLAYER(play);
     
     OPEN_DISPS(play->state.gfxCtx);
@@ -372,6 +375,14 @@ void Draw_HoverBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2,
                 gDPSetEnvColor(POLY_XLU_DISP++, 120, 90, 30, 128);
                 gSPDisplayList(POLY_XLU_DISP++, gHoverBootsCircleDL);
             }
+        }
+    } else if (limbIndex == PLAYER_LIMB_LEFT_FOOT) {
+        if (useHoverBoots) {
+            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        }
+    } else if (limbIndex == PLAYER_LIMB_RIGHT_FOOT) {
+        if (useHoverBoots) {
+            gSPDisplayList(POLY_OPA_DISP++, gLinkAdultRightHoverBootDL);
         }
     }
     
