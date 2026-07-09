@@ -9,7 +9,14 @@ extern s16 sFloorPitchShape;
 extern FloorProperty sPrevFloorProperty;
 u8 hoverBootsTimer = 0;
 
-bool useHoverBoots = true;
+enum config_selected_boots {
+    CONFIG_DEFAULT,
+    CONFIG_HOVER,
+    CONFIG_IRON,
+};
+
+#define HOVER_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_HOVER
+#define IRON_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_IRON
 
 s32 func_808340AC(FloorType floorType);
 bool func_808340D4(FloorType floorType);
@@ -36,7 +43,7 @@ s16 hoverBootsData[] = {
 };
 
 RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* player) {
-    if (useHoverBoots == true) {
+    if (HOVER_BOOTS_ENABLED == true) {
         REG(19) = hoverBootsData[0];
         REG(30) = hoverBootsData[1];
         REG(32) = hoverBootsData[2];
@@ -58,13 +65,13 @@ RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* 
     }
 }
 
- // Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
- // player is standing on the ground.  from OOT 
+// Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
+// player is standing on the ground.  from OOT 
 
 s32 Player_UpdateHoverBoots(Player* this) {
     s32 canHoverOnGround;
-
-    if ((useHoverBoots == true) && (hoverBootsTimer != 0)) {
+    
+    if ((HOVER_BOOTS_ENABLED == true) && (hoverBootsTimer != 0)) {
         hoverBootsTimer--;
     } else {
         hoverBootsTimer = 0;
@@ -72,7 +79,7 @@ s32 Player_UpdateHoverBoots(Player* this) {
 
     // never gets set to true?
     canHoverOnGround =
-        (useHoverBoots == true) &&
+        (HOVER_BOOTS_ENABLED == true) &&
         ((this->actor.depthInWater >= 0.0f) || (func_808340AC(sPlayerFloorType) >= 0) || func_808340D4(sPlayerFloorType));
 
     if (canHoverOnGround && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (hoverBootsTimer != 0)) {
@@ -111,14 +118,14 @@ void onfunc_80834D50() {
 }
 
 RECOMP_HOOK ("func_8083EA44") void HoverSFXHook(Player* this, f32 arg1) {
-    if ((useHoverBoots == true) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+    if ((HOVER_BOOTS_ENABLED == true) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         (hoverBootsTimer != 0)) {
         Actor_PlaySfx_Flagged2(&this->actor, NA_SE_PL_HOBBERBOOTS_LV - SFX_FLAG);
     }
 }
 
 RECOMP_PATCH s32 func_808430E0(Player* this) {
-    if (useHoverBoots && this->actor.id == ACTOR_PLAYER) {
+    if (HOVER_BOOTS_ENABLED && this->actor.id == ACTOR_PLAYER) {
         return Player_UpdateHoverBoots(this);
     }
 
@@ -266,7 +273,7 @@ RECOMP_PATCH void func_8083827C(Player* this, PlayState* play) {
         }
 
         // handle hover boots behavior here
-        if (useHoverBoots && hoverBootsTimer != 0) {
+        if (HOVER_BOOTS_ENABLED && hoverBootsTimer != 0) {
             this->actor.velocity.y = 1.0f;
             sPrevFloorProperty = FLOOR_PROPERTY_9;
             return;
@@ -340,7 +347,7 @@ void Draw_OoTBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, V
     if (limbIndex == PLAYER_LIMB_TORSO) {
         // if ((this->currentBoots == PLAYER_BOOTS_HOVER) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         //     !(this->stateFlags1 & PLAYER_STATE1_23) && ((u32)this->hoverBootsTimer != 0)) {
-        if ((useHoverBoots) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+        if ((HOVER_BOOTS_ENABLED) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
             !(this->stateFlags1 & PLAYER_STATE1_23) && ((u32)hoverBootsTimer != 0)) {
             static s32 D_8085486C = 255;
 
@@ -377,12 +384,16 @@ void Draw_OoTBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, V
             }
         }
     } else if (limbIndex == PLAYER_LIMB_LEFT_FOOT) {
-        if (useHoverBoots) {
+        if (HOVER_BOOTS_ENABLED) {
             gSPDisplayList(POLY_OPA_DISP++, gLinkAdultLeftHoverBootDL);
+        } else if (IRON_BOOTS_ENABLED) {
+            gSPDisplayList(POLY_OPA_DISP++, gLinkAdultLeftIronBootDL);
         }
     } else if (limbIndex == PLAYER_LIMB_RIGHT_FOOT) {
-        if (useHoverBoots) {
+        if (HOVER_BOOTS_ENABLED) {
             gSPDisplayList(POLY_OPA_DISP++, gLinkAdultRightHoverBootDL);
+        } else if (IRON_BOOTS_ENABLED) {
+            gSPDisplayList(POLY_OPA_DISP++, gLinkAdultRightIronBootDL);
         }
     }
     
