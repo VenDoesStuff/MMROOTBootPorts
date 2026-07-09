@@ -378,7 +378,7 @@ void Draw_OoTBoots(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, V
         }
     } else if (limbIndex == PLAYER_LIMB_LEFT_FOOT) {
         if (useHoverBoots) {
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPDisplayList(POLY_OPA_DISP++, gLinkAdultLeftHoverBootDL);
         }
     } else if (limbIndex == PLAYER_LIMB_RIGHT_FOOT) {
         if (useHoverBoots) {
