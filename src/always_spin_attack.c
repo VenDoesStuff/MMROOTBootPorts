@@ -106,7 +106,7 @@ RECOMP_HOOK ("func_8083EA44") void HoverSFXHook(Player* this, f32 arg1) {
 }
 
 RECOMP_PATCH s32 func_808430E0(Player* this) {
-    if (useHoverBoots) {
+    if (useHoverBoots && this->actor.id == ACTOR_PLAYER) {
         return Player_UpdateHoverBoots(this);
     }
 
