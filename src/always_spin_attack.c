@@ -58,12 +58,6 @@ RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* 
     }
 }
 
-RECOMP_HOOK ("Player_UpdateCommon") void HoverCheck(Player* this, PlayState* play, Input* input) {
-    if (CHECK_BTN_ANY(CONTROLLER1(&play->state)->cur.button, BTN_A)){
-        useHoverBoots = true;
-    }
-}
-
  // Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
  // player is standing on the ground.  from OOT 
 
@@ -76,6 +70,7 @@ s32 Player_UpdateHoverBoots(Player* this) {
         hoverBootsTimer = 0;
     }
 
+    // never gets set to true?
     canHoverOnGround =
         (useHoverBoots == true) &&
         ((this->actor.depthInWater >= 0.0f) || (func_808340AC(sPlayerFloorType) >= 0) || func_808340D4(sPlayerFloorType));
@@ -96,6 +91,18 @@ s32 Player_UpdateHoverBoots(Player* this) {
 
         return true;
     }
+}
+
+RECOMP_HOOK("Player_UpdateUpperBody")
+void onPlayer_UpdateUpperBody(Player* this, PlayState* play) {
+    if (!(this->stateFlags1 & PLAYER_STATE1_800000) && (this->actor.parent != NULL) && Player_IsHoldingHookshot(this)) {
+        hoverBootsTimer = 0;
+    }
+}
+
+RECOMP_HOOK("func_808395F0")
+void onfunc_808395F0(Player* this, PlayState* play) {
+    hoverBootsTimer = 0;
 }
 
 RECOMP_HOOK ("func_8083EA44") void HoverSFXHook(Player* this, f32 arg1) {
