@@ -6,12 +6,14 @@
 
 extern FloorType sPlayerFloorType;
 extern s16 sFloorPitchShape;
-u8 hoverBootsTimer;
+extern FloorProperty sPrevFloorProperty;
+u8 hoverBootsTimer = 0;
 
-HoverBoots = false;
+bool useHoverBoots = true;
 
 s32 func_808340AC(FloorType floorType);
 bool func_808340D4(FloorType floorType);
+s32 func_8083784C(Player* this);
 
 s16 hoverBootsData[] = {
     200,                         // REG(19)
@@ -34,7 +36,7 @@ s16 hoverBootsData[] = {
 };
 
 RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* player) {
-    if (player->currentBoots == PLAYER_BOOTS_HOVER) {
+    if (useHoverBoots == true) {
         REG(19) = hoverBootsData[0];
         REG(30) = hoverBootsData[1];
         REG(32) = hoverBootsData[2];
@@ -43,36 +45,39 @@ RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* 
         REG(36) = hoverBootsData[5];
         REG(37) = hoverBootsData[6];
         REG(38) = hoverBootsData[7];
-        REG(39) = hoverBootsData[8];
-        R_DECELERATE_RATE = hoverBootsData[9];
-        R_RUN_SPEED_LIMIT = hoverBootsData[10];
-        REG(68) = hoverBootsData[11]; // gravity
-        REG(69) = hoverBootsData[12];
-        IREG(66) = hoverBootsData[13];
-        IREG(67) = hoverBootsData[14];
-        IREG(68) = hoverBootsData[15];
-        IREG(69) = hoverBootsData[16];
-        MREG(95) = hoverBootsData[17];
+        // REG(39) = hoverBootsData[8];
+        R_DECELERATE_RATE = hoverBootsData[8];
+        R_RUN_SPEED_LIMIT = hoverBootsData[9];
+        REG(68) = hoverBootsData[10]; // gravity
+        REG(69) = hoverBootsData[11];
+        IREG(66) = hoverBootsData[12];
+        IREG(67) = hoverBootsData[13];
+        IREG(68) = hoverBootsData[14];
+        IREG(69) = hoverBootsData[15];
+        MREG(95) = hoverBootsData[16];
     }
 }
 
 RECOMP_HOOK ("Player_UpdateCommon") void HoverCheck(Player* this, PlayState* play, Input* input) {
     if (CHECK_BTN_ANY(CONTROLLER1(&play->state)->cur.button, BTN_A)){
-        HoverBoots = true;
+        useHoverBoots = true;
     }
 }
+
+ // Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
+ // player is standing on the ground.  from OOT 
 
 s32 Player_UpdateHoverBoots(Player* this) {
     s32 canHoverOnGround;
 
-    if ((this->currentBoots == PLAYER_BOOTS_HOVER) && (hoverBootsTimer != 0)) {
+    if ((useHoverBoots == true) && (hoverBootsTimer != 0)) {
         hoverBootsTimer--;
     } else {
         hoverBootsTimer = 0;
     }
 
     canHoverOnGround =
-        (this->currentBoots == PLAYER_BOOTS_HOVER) &&
+        (useHoverBoots == true) &&
         ((this->actor.depthInWater >= 0.0f) || (func_808340AC(sPlayerFloorType) >= 0) || func_808340D4(sPlayerFloorType));
 
     if (canHoverOnGround && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (hoverBootsTimer != 0)) {
@@ -94,8 +99,211 @@ s32 Player_UpdateHoverBoots(Player* this) {
 }
 
 RECOMP_HOOK ("func_8083EA44") void HoverSFXHook(Player* this, f32 arg1) {
-    if ((this->currentBoots == PLAYER_BOOTS_HOVER) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+    if ((useHoverBoots == true) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         (hoverBootsTimer != 0)) {
-    Actor_PlaySfx_Flagged2(&this->actor, NA_SE_PL_HOBBERBOOTS_LV - SFX_FLAG);
+        Actor_PlaySfx_Flagged2(&this->actor, NA_SE_PL_HOBBERBOOTS_LV - SFX_FLAG);
+    }
 }
+
+RECOMP_PATCH s32 func_808430E0(Player* this) {
+    if (useHoverBoots) {
+        return Player_UpdateHoverBoots(this);
+    }
+
+    if ((this->transformation == PLAYER_FORM_DEKU) && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+        func_8083784C(this)) {
+        this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
+    }
+    if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) {
+        return false;
+    }
+
+    if (!(this->stateFlags1 & PLAYER_STATE1_8000000)) {
+        sPlayerFloorType = FLOOR_TYPE_0;
+    }
+    this->floorPitch = 0;
+    this->floorPitchAlt = 0;
+    sFloorPitchShape = 0;
+    return true;
+}
+
+// RECOMP_HOOK ("func_8083827C") void HoverVelocity(Player* this, PlayState* play) {
+//     if (hoverBootsTimer != 0) {
+//         this->actor.velocity.y = 1.0f;
+//         sPrevFloorProperty = FLOOR_PROPERTY_9;
+//         return;
+//     }
+// }
+
+void func_80834140(PlayState* play, Player* this, PlayerAnimationHeader* anim);
+void func_808345C8(void);
+void func_8083B8D0(PlayState* play, Player* this);
+s32 func_808373F8(PlayState* play, Player* this, u16 sfxId);
+void func_80169EFC(PlayState* this);
+void func_8083B930(PlayState* play, Player* this);
+void func_8083B32C(PlayState* play, Player* this, f32 arg2);
+void Player_SetupTurnInPlace(PlayState* play, Player* this, s16 yaw);
+void Player_Action_33(Player* this, PlayState* play);
+void Player_Action_49(Player* this, PlayState* play);
+void Player_Action_28(Player* this, PlayState* play);
+void Player_Action_WaitForPutAway(Player* this, PlayState* play);
+s32 Player_SetAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 arg3);
+void Player_Action_1(Player* this, PlayState* play);
+void Player_Action_43(Player* this, PlayState* play);
+void Player_Action_61(Player* this, PlayState* play);
+void Player_Action_54(Player* this, PlayState* play);
+void Player_Action_62(Player* this, PlayState* play);
+void Player_Action_57(Player* this, PlayState* play);
+void Player_Action_58(Player* this, PlayState* play);
+void Player_Action_59(Player* this, PlayState* play);
+void Player_Action_60(Player* this, PlayState* play);
+void Player_Action_55(Player* this, PlayState* play);
+void Player_Action_25(Player* this, PlayState* play);
+void Player_Action_27(Player* this, PlayState* play);
+void Player_Action_96(Player* this, PlayState* play);
+void Player_Action_82(Player* this, PlayState* play);
+void Player_Action_83(Player* this, PlayState* play);
+s32 Player_SetAction(PlayState* play, Player* this, PlayerActionFunc actionFunc, s32 arg3);
+void Player_Action_56(Player* this, PlayState* play);
+s32 func_808381F8(PlayState* play, Player* this);
+s32 func_80835428(PlayState* play, Player* this);
+void func_8082DC64(PlayState* play, Player* this);
+s32 func_80837730(PlayState* play, Player* this, f32 arg2, s32 scale);
+void Player_Anim_PlayOnceMorph(PlayState* play, Player* this, PlayerAnimationHeader* anim);
+extern f32 sControlStickMagnitude;
+extern FloorProperty sPrevFloorProperty;
+extern f32 sPlayerYDistToFloor; // missing
+extern Input* sPlayerControlInput; // missing
+void func_80834D50(PlayState* play, Player* this, PlayerAnimationHeader* anim, f32 speed, u16 sfxId);
+void func_808373A4(PlayState* play, Player* this);
+void Player_AnimSfx_PlayVoice(Player* this, u16 sfxId);
+void Player_StopHorizontalMovement(Player* this);
+void func_8082DD2C(PlayState* play, Player* this);
+f32 func_80835CD8(PlayState* play, Player* this, Vec3f* arg2, Vec3f* pos, CollisionPoly** outPoly, s32* outBgId);
+void func_80834DB8(Player* this, PlayerAnimationHeader* anim, f32 speed, PlayState* play);
+s32 func_80837DEC(Player* this, PlayState* play);
+void Player_Anim_PlayLoop(PlayState* play, Player* this, PlayerAnimationHeader* anim);
+void Player_Action_CsAction(Player* this, PlayState* play);
+void Player_Anim_PlayOnce(PlayState* play, Player* this, PlayerAnimationHeader* anim);
+extern u32 sPlayerTouchedWallFlags; // missing
+void func_8082DAD4(Player* this);
+extern Actor* interactRangeActor; // missing
+
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_down;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_jump;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_run_jump;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_run_jump_water_fall;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_landing_wait;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_deep_start;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_get;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_deep_end;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_250jump_start;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_15step_up;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_150step_up;
+extern PlayerAnimationHeader gPlayerAnim_link_normal_100step_up;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_wait2swim_wait;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_land2swim_wait;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_get;
+extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_deep_end;
+
+Vec3f D_8085D154 = { 0.0f, 0.0f, 100.0f };
+
+// probably temp patch
+RECOMP_PATCH void func_8083827C(Player* this, PlayState* play) {
+    s32 temp_t0; // sp64
+    CollisionPoly* sp60;
+    s32 sp5C;
+    WaterBox* waterBox;
+    Vec3f sp4C;
+    f32 sp48;
+    f32 sp44;
+
+    this->fallDistance = this->fallStartHeight - (s32)this->actor.world.pos.y;
+    if (!(this->stateFlags1 & (PLAYER_STATE1_8000000 | PLAYER_STATE1_20000000)) &&
+        ((this->stateFlags1 & PLAYER_STATE1_80000000) ||
+         !(this->stateFlags3 & (PLAYER_STATE3_200 | PLAYER_STATE3_2000))) &&
+        !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)) {
+        if (func_80835428(play, this)) {
+            return;
+        }
+
+        if (sPrevFloorProperty == FLOOR_PROPERTY_8) {
+            this->actor.world.pos.x = this->actor.prevPos.x;
+            this->actor.world.pos.z = this->actor.prevPos.z;
+            return;
+        }
+
+        if ((this->stateFlags3 & PLAYER_STATE3_2) || (this->skelAnime.movementFlags & ANIM_FLAG_80)) {
+            return;
+        }
+
+        if ((Player_Action_25 == this->actionFunc) || (Player_Action_27 == this->actionFunc) ||
+            (Player_Action_28 == this->actionFunc) || (Player_Action_96 == this->actionFunc) ||
+            (Player_Action_82 == this->actionFunc) || (Player_Action_83 == this->actionFunc)) {
+            return;
+        }
+
+        if ((sPrevFloorProperty == FLOOR_PROPERTY_7) || (this->meleeWeaponState != PLAYER_MELEE_WEAPON_STATE_0) ||
+            ((this->skelAnime.movementFlags & ANIM_FLAG_ENABLE_MOVEMENT) && func_808381F8(play, this))) {
+            Math_Vec3f_Copy(&this->actor.world.pos, &this->actor.prevPos);
+            if (this->speedXZ > 0.0f) {
+                Player_StopHorizontalMovement(this);
+            }
+            this->actor.bgCheckFlags |= BGCHECKFLAG_GROUND_TOUCH;
+            return;
+        }
+
+        // handle hover boots behavior here
+        if (useHoverBoots && hoverBootsTimer != 0) {
+            this->actor.velocity.y = 1.0f;
+            sPrevFloorProperty = FLOOR_PROPERTY_9;
+            return;
+        }
+
+        temp_t0 = BINANG_SUB(this->yaw, this->actor.shape.rot.y);
+        Player_SetAction(play, this, Player_Action_25, 1);
+        func_8082DD2C(play, this);
+
+        this->floorSfxOffset = this->prevFloorSfxOffset;
+        if ((this->transformation != PLAYER_FORM_GORON) &&
+            ((this->transformation != PLAYER_FORM_DEKU) || (this->remainingHopsCounter != 0)) &&
+            (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND_LEAVE)) {
+            if (!(this->stateFlags1 & PLAYER_STATE1_8000000)) {
+                if ((sPrevFloorProperty != FLOOR_PROPERTY_6) && (sPrevFloorProperty != FLOOR_PROPERTY_9) &&
+                    (sPlayerYDistToFloor > 20.0f) && (this->meleeWeaponState == PLAYER_MELEE_WEAPON_STATE_0)) {
+                    if ((ABS_ALT(temp_t0) < 0x2000) && (this->speedXZ > 3.0f)) {
+                        if (!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR)) {
+                            if (((this->transformation == PLAYER_FORM_ZORA) &&
+                                 CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A)) ||
+                                ((sPrevFloorProperty == FLOOR_PROPERTY_11) &&
+                                 (this->transformation != PLAYER_FORM_GORON) &&
+                                 (this->transformation != PLAYER_FORM_DEKU))) {
+
+                                sp48 = func_80835CD8(play, this, &D_8085D154, &sp4C, &sp60, &sp5C);
+                                sp44 = this->actor.world.pos.y;
+
+                                if (WaterBox_GetSurface1(play, &play->colCtx, sp4C.x, sp4C.z, &sp44, &waterBox) &&
+                                    ((sp44 - sp48) > 50.0f)) {
+                                    func_80834DB8(this, &gPlayerAnim_link_normal_run_jump_water_fall, 6.0f, play);
+                                    Player_SetAction(play, this, Player_Action_27, 0);
+                                    return;
+                                }
+                            }
+                        }
+                        func_808373F8(play, this, NA_SE_VO_LI_AUTO_JUMP);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Checking if the ledge is tall enough for Player to hang from
+        if ((sPrevFloorProperty == FLOOR_PROPERTY_9) || (sPlayerYDistToFloor <= this->ageProperties->unk_34) ||
+            !func_80837DEC(this, play)) {
+            Player_Anim_PlayLoop(play, this, &gPlayerAnim_link_normal_landing_wait);
+        }
+    } else {
+        this->fallStartHeight = this->actor.world.pos.y;
+        this->remainingHopsCounter = 5;
+    }
 }
