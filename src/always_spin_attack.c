@@ -22,109 +22,115 @@ s32 func_808340AC(FloorType floorType);
 bool func_808340D4(FloorType floorType);
 s32 func_8083784C(Player* this);
 
-s16 hoverBootsData[] = {
-    200,                         // REG(19)
-    1000,                        // REG(30)
-    300,                         // REG(32)
-    800,                         // REG(34)
-    500,                         // REG(35)
-    400,                         // REG(36)
-    800,                         // REG(37)
-    400,                         // REG(38)
-    800,                         // R_DECELERATE_RATE
-    550,                         // R_RUN_SPEED_LIMIT
-    -100,                        // REG(68)
-    600,                         // REG(69)
-    540,                         // IREG(66)
-    750,                         // IREG(67)
-    125,                         // IREG(68)
-    400,                         // IREG(69)
-    200,                         // MREG(95)
+s16 ootBootsData[][17] = {
+    // PLAYER_BOOTS_HOVER
+    {
+        200,                         // REG(19)
+        1000,                        // REG(30)
+        300,                         // REG(32)
+        800,                         // REG(34)
+        500,                         // REG(35)
+        400,                         // REG(36)
+        800,                         // REG(37)
+        400,                         // REG(38)
+        800,                         // R_DECELERATE_RATE
+        550,                         // R_RUN_SPEED_LIMIT
+        -100,                        // REG(68)
+        600,                         // REG(69)
+        540,                         // IREG(66)
+        750,                         // IREG(67)
+        125,                         // IREG(68)
+        400,                         // IREG(69)
+        200,                         // MREG(95)
+    },
+    // PLAYER_BOOTS_IRON
+    {
+        200,                         // REG(19)
+        1000,                        // REG(30)
+        300,                         // REG(32)
+        800,                         // REG(34)
+        500,                         // REG(35)
+        400,                         // REG(36)
+        1000,                         // REG(37)
+        0,                         // REG(38)
+        800,                         // R_DECELERATE_RATE
+        300,                         // R_RUN_SPEED_LIMIT
+        -160,                        // REG(68)
+        600,                         // REG(69)
+        590,                         // IREG(66)
+        750,                         // IREG(67)
+        125,                         // IREG(68)
+        200,                         // IREG(69)
+        200,                         // MREG(95)
+    },
+    // PLAYER_BOOTS_IRON_UNDERWATER
+    {
+        200,                         // REG(19)
+        1000,                        // REG(30)
+        300,                         // REG(32)
+        800,                         // REG(34)
+        500,                         // REG(35)
+        400,                         // REG(36)
+        800,                         // REG(37)
+        400,                         // REG(38)
+        800,                         // R_DECELERATE_RATE
+        550,                         // R_RUN_SPEED_LIMIT
+        -160,                        // REG(68)
+        600,                         // REG(69)
+        540,                         // IREG(66)
+        750,                         // IREG(67)
+        125,                         // IREG(68)
+        400,                         // IREG(69)
+        200,                         // MREG(95)
+    },
 };
 
-s16 IronBootsData[] = {
-    200,                         // REG(19)
-    1000,                        // REG(30)
-    300,                         // REG(32)
-    800,                         // REG(34)
-    500,                         // REG(35)
-    400,                         // REG(36)
-    1000,                         // REG(37)
-    0,                         // REG(38)
-    800,                         // R_DECELERATE_RATE
-    300,                         // R_RUN_SPEED_LIMIT
-    -160,                        // REG(68)
-    600,                         // REG(69)
-    590,                         // IREG(66)
-    750,                         // IREG(67)
-    125,                         // IREG(68)
-    200,                         // IREG(69)
-    200,                         // MREG(95)
-};
+PlayState* sPlay;
+Player* sPlayer;
 
-s16 IronBootsUnderwaterData[] = {
-    200,                         // REG(19)
-    1000,                        // REG(30)
-    300,                         // REG(32)
-    800,                         // REG(34)
-    500,                         // REG(35)
-    400,                         // REG(36)
-    800,                         // REG(37)
-    400,                         // REG(38)
-    800,                         // R_DECELERATE_RATE
-    550,                         // R_RUN_SPEED_LIMIT
-    -160,                        // REG(68)
-    600,                         // REG(69)
-    540,                         // IREG(66)
-    750,                         // IREG(67)
-    125,                         // IREG(68)
-    400,                         // IREG(69)
-    200,                         // MREG(95)
-};
+RECOMP_HOOK("func_80123140") 
+void setup_setBoots(PlayState* play, Player* player) {
+    sPlay = play;
+    sPlayer = player;
+}
 
 RECOMP_HOOK_RETURN("func_80123140") 
-void setBoots(PlayState* play, Player* player) {
-    if (HOVER_BOOTS_ENABLED == true) {
-        REG(19) = hoverBootsData[0];
-        REG(30) = hoverBootsData[1];
-        REG(32) = hoverBootsData[2];
-        REG(34) = hoverBootsData[3];
-        REG(35) = hoverBootsData[4];
-        REG(36) = hoverBootsData[5];
-        REG(37) = hoverBootsData[6];
-        REG(38) = hoverBootsData[7];
-        // REG(39) = hoverBootsData[8];
-        R_DECELERATE_RATE = hoverBootsData[8];
-        R_RUN_SPEED_LIMIT = hoverBootsData[9];
-        REG(68) = hoverBootsData[10]; // gravity
-        REG(69) = hoverBootsData[11];
-        IREG(66) = hoverBootsData[12];
-        IREG(67) = hoverBootsData[13];
-        IREG(68) = hoverBootsData[14];
-        IREG(69) = hoverBootsData[15];
-        MREG(95) = hoverBootsData[16];
+void setBoots() {
+    PlayState* play = sPlay;
+    Player* player = sPlayer;
+
+    s8 selectedBoots = -1;
+
+    if (HOVER_BOOTS_ENABLED) {
+        selectedBoots = 0;
+    } else if (IRON_BOOTS_ENABLED) {
+        selectedBoots = 1;
+        // iron boots have different boot values underwater
+        if (player->stateFlags1 & PLAYER_STATE1_8000000) {
+            selectedBoots = 2;
+        }
+    } else {
+        return; // no boots
     }
 
-    if (IRON_BOOTS_ENABLED) {
-        REG(19) = IronBootsData[0];
-        REG(30) = IronBootsData[1];
-        REG(32) = IronBootsData[2];
-        REG(34) = IronBootsData[3];
-        REG(35) = IronBootsData[4];
-        REG(36) = IronBootsData[5];
-        REG(37) = IronBootsData[6];
-        REG(38) = IronBootsData[7];
-        // REG(39) = hoverBootsData[8];
-        R_DECELERATE_RATE = IronBootsData[8];
-        R_RUN_SPEED_LIMIT = IronBootsData[9];
-        REG(68) = IronBootsData[10]; // gravity
-        REG(69) = IronBootsData[11];
-        IREG(66) = IronBootsData[12];
-        IREG(67) = IronBootsData[13];
-        IREG(68) = IronBootsData[14];
-        IREG(69) = IronBootsData[15];
-        MREG(95) = IronBootsData[16];
-    } 
+    REG(19) = ootBootsData[selectedBoots][0];
+    REG(30) = ootBootsData[selectedBoots][1];
+    REG(32) = ootBootsData[selectedBoots][2];
+    REG(34) = ootBootsData[selectedBoots][3];
+    REG(35) = ootBootsData[selectedBoots][4];
+    REG(36) = ootBootsData[selectedBoots][5];
+    REG(37) = ootBootsData[selectedBoots][6];
+    REG(38) = ootBootsData[selectedBoots][7];
+    // REG(39) = ootBootsData[selectedBoots][8];
+    R_DECELERATE_RATE = ootBootsData[selectedBoots][8];
+    R_RUN_SPEED_LIMIT = ootBootsData[selectedBoots][9];
+    REG(68) = ootBootsData[selectedBoots][10]; // gravity
+    REG(69) = ootBootsData[selectedBoots][11];
+    IREG(66) = ootBootsData[selectedBoots][12];
+    IREG(67) = ootBootsData[selectedBoots][13];
+    IREG(68) = ootBootsData[selectedBoots][14];
+    IREG(69) = ootBootsData[selectedBoots][15];
+    MREG(95) = ootBootsData[selectedBoots][16];
 }
 
 // Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
