@@ -42,7 +42,48 @@ s16 hoverBootsData[] = {
     200,                         // MREG(95)
 };
 
-RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* player) {
+s16 IronBootsData[] = {
+    200,                         // REG(19)
+    1000,                        // REG(30)
+    300,                         // REG(32)
+    800,                         // REG(34)
+    500,                         // REG(35)
+    400,                         // REG(36)
+    1000,                         // REG(37)
+    0,                         // REG(38)
+    800,                         // R_DECELERATE_RATE
+    300,                         // R_RUN_SPEED_LIMIT
+    -160,                        // REG(68)
+    600,                         // REG(69)
+    590,                         // IREG(66)
+    750,                         // IREG(67)
+    125,                         // IREG(68)
+    200,                         // IREG(69)
+    200,                         // MREG(95)
+};
+
+s16 IronBootsUnderwaterData[] = {
+    200,                         // REG(19)
+    1000,                        // REG(30)
+    300,                         // REG(32)
+    800,                         // REG(34)
+    500,                         // REG(35)
+    400,                         // REG(36)
+    800,                         // REG(37)
+    400,                         // REG(38)
+    800,                         // R_DECELERATE_RATE
+    550,                         // R_RUN_SPEED_LIMIT
+    -160,                        // REG(68)
+    600,                         // REG(69)
+    540,                         // IREG(66)
+    750,                         // IREG(67)
+    125,                         // IREG(68)
+    400,                         // IREG(69)
+    200,                         // MREG(95)
+};
+
+RECOMP_HOOK_RETURN("func_80123140") 
+void setBoots(PlayState* play, Player* player) {
     if (HOVER_BOOTS_ENABLED == true) {
         REG(19) = hoverBootsData[0];
         REG(30) = hoverBootsData[1];
@@ -63,6 +104,27 @@ RECOMP_HOOK_RETURN("func_80123140") void setHoverBoots(PlayState* play, Player* 
         IREG(69) = hoverBootsData[15];
         MREG(95) = hoverBootsData[16];
     }
+
+    if (IRON_BOOTS_ENABLED) {
+        REG(19) = IronBootsData[0];
+        REG(30) = IronBootsData[1];
+        REG(32) = IronBootsData[2];
+        REG(34) = IronBootsData[3];
+        REG(35) = IronBootsData[4];
+        REG(36) = IronBootsData[5];
+        REG(37) = IronBootsData[6];
+        REG(38) = IronBootsData[7];
+        // REG(39) = hoverBootsData[8];
+        R_DECELERATE_RATE = IronBootsData[8];
+        R_RUN_SPEED_LIMIT = IronBootsData[9];
+        REG(68) = IronBootsData[10]; // gravity
+        REG(69) = IronBootsData[11];
+        IREG(66) = IronBootsData[12];
+        IREG(67) = IronBootsData[13];
+        IREG(68) = IronBootsData[14];
+        IREG(69) = IronBootsData[15];
+        MREG(95) = IronBootsData[16];
+    } 
 }
 
 // Handles a special case where the Hover Boots are able to activate when standing on certain floor types even if the
@@ -146,8 +208,12 @@ RECOMP_PATCH s32 func_808430E0(Player* this) {
     return true;
 }
 
-// RECOMP_HOOK ("func_8083827C") void HoverVelocity(Player* this, PlayState* play) {
-//     if (hoverBootsTimer != 0) {
+// RECOMP_HOOK ("func_8083827C") void HoverVelocitySetup(Player* this, PlayState* play) {
+
+// }
+
+// RECOMP_HOOK_RETURN ("func_80083827C") void HoverVelocity() {
+//         if (hoverBootsTimer != 0) {
 //         this->actor.velocity.y = 1.0f;
 //         sPrevFloorProperty = FLOOR_PROPERTY_9;
 //         return;
@@ -207,6 +273,7 @@ void Player_Anim_PlayOnce(PlayState* play, Player* this, PlayerAnimationHeader* 
 extern u32 sPlayerTouchedWallFlags; // missing
 void func_8082DAD4(Player* this);
 extern Actor* interactRangeActor; // missing
+u16 Player_GetFloorSfxByAge(Player* this, u16 sfxId);
 
 extern PlayerAnimationHeader gPlayerAnim_link_swimer_swim_down;
 extern PlayerAnimationHeader gPlayerAnim_link_normal_jump;
@@ -326,6 +393,37 @@ RECOMP_PATCH void func_8083827C(Player* this, PlayState* play) {
         this->remainingHopsCounter = 5;
     }
 }
+
+RECOMP_HOOK("Player_UpdateCommon")
+void Equip_IronBoots (Player* this, PlayState* play, Input* input) {
+
+recomp_printf ("floor type %d\n", sPlayerFloorType);
+
+    if (HOVER_BOOTS_ENABLED && (this->transformation == PLAYER_FORM_HUMAN)) {
+        sPlayerFloorType = FLOOR_TYPE_5;
+    }
+
+    if (IRON_BOOTS_ENABLED && (this->transformation == PLAYER_FORM_HUMAN)) {
+        this->currentBoots = PLAYER_BOOTS_ZORA_UNDERWATER;
+        func_80123140(play, this);
+    } else if ((this->transformation == PLAYER_FORM_HUMAN) && (this->currentBoots != PLAYER_BOOTS_HYLIAN) && (this->currentMask != PLAYER_MASK_GIANT)) {
+        this->currentBoots = PLAYER_BOOTS_HYLIAN;
+        func_80123140(play, this);
+    }
+}
+
+// todo: IronBoots walking SFX
+
+// RECOMP_HOOK ("Player_AnimSfx_PlayFloorWalk") 
+// void IronSFX(Player* this, f32 freqVolumeLerp) {
+//     s32 sfxId;
+
+//     if ((this->currentMask == PLAYER_MASK_GIANT) || (IRON_BOOTS_ENABLED && this->transformation == PLAYER_FORM_HUMAN)) {
+//         sfxId = NA_SE_PL_GIANT_WALK;
+//     } else {
+//         sfxId = Player_GetFloorSfxByAge(this, NA_SE_PL_WALK_GROUND);
+//     }
+// }
 
 #define PLAYER_STATE1_23 PLAYER_STATE1_800000 // (1 << 23)
 
