@@ -116,7 +116,7 @@ u64 gLinkAdultHoverBootsFeatherTex [] = {
 extern Vtx object_link_boyVtx_00EFB8[]; // also use for Iron Boots because OOT needs to be killed with hammers
 
 Gfx gLinkAdultLeftHoverBootDL[] = {
-    // gsSPMatrix(0x0D000180, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D000180, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
@@ -169,7 +169,7 @@ Gfx gLinkAdultLeftHoverBootDL[] = {
 };
 
 Gfx gLinkAdultRightHoverBootDL[] = {
-    // gsSPMatrix(0x0D0000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D0000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),

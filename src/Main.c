@@ -8,6 +8,7 @@ extern FloorType sPlayerFloorType;
 extern s16 sFloorPitchShape;
 extern FloorProperty sPrevFloorProperty;
 u8 hoverBootsTimer = 0;
+void func_8082E1F0(Player* this, u16 sfxId);
 
 enum config_selected_boots {
     CONFIG_DEFAULT,
@@ -15,8 +16,35 @@ enum config_selected_boots {
     CONFIG_IRON,
 };
 
-#define HOVER_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_HOVER
-#define IRON_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_IRON
+// #define HOVER_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_HOVER
+// #define IRON_BOOTS_ENABLED recomp_get_config_u32("selected_boots") == CONFIG_IRON
+u8 HOVER_BOOTS_ENABLED = false;
+u8 IRON_BOOTS_ENABLED = false;
+
+RECOMP_HOOK("Player_Update")
+void ToggleBootsWithRZDpad(Actor* thisx, PlayState* play, Player* this) {
+    Input* input = CONTROLLER1(&play->state);
+    if (CHECK_BTN_ALL(input->cur.button, BTN_L) && CHECK_BTN_ALL(input->press.button, BTN_A)) {
+
+        if (HOVER_BOOTS_ENABLED == true) {
+            HOVER_BOOTS_ENABLED = false;
+            // func_8082E1F0(this, NA_SE_PL_TAKE_OUT_SHIELD);
+        } else 
+        HOVER_BOOTS_ENABLED = true;
+        IRON_BOOTS_ENABLED = false;
+        func_8082E1F0(this, NA_SE_PL_CHANGE_ARMS);
+
+    } else if (CHECK_BTN_ALL(input->cur.button, BTN_L) && CHECK_BTN_ALL(input->press.button, BTN_Z)) {
+
+        if (IRON_BOOTS_ENABLED == true) {
+            IRON_BOOTS_ENABLED = false;
+            // func_8082E1F0(this, NA_SE_PL_TAKE_OUT_SHIELD);
+        } else
+        IRON_BOOTS_ENABLED = true;
+        HOVER_BOOTS_ENABLED = false;
+        func_8082E1F0(this, NA_SE_PL_CHANGE_ARMS);
+    }
+}
 
 s32 func_808340AC(FloorType floorType);
 bool func_808340D4(FloorType floorType);
